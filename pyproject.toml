@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "proton-runner"
+version = "0.1.0"
+description = "Command and control program for running tasks on multiple servers"
+requires-python = ">=3.11"
+dependencies = [
+    "pyyaml>=6.0",
+    "asyncssh>=2.14",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4",
+    "pytest-asyncio>=0.23",
+]
+
+[project.scripts]
+proton-runner = "proton_runner.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
