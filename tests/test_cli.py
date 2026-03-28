@@ -15,6 +15,7 @@ class TestParseArgs:
         assert args.concurrency == 10
         assert args.timeout == 10.0
         assert args.command_timeout == 300.0
+        assert args.ask_pass is False
         assert args.no_host_key_check is False
 
     def test_all_flags(self):
@@ -26,6 +27,7 @@ class TestParseArgs:
             "-c", "20",
             "--timeout", "30",
             "--command-timeout", "60",
+            "-k",
             "--no-host-key-check",
         ])
         assert args.playbook == "play.yml"
@@ -35,6 +37,7 @@ class TestParseArgs:
         assert args.concurrency == 20
         assert args.timeout == 30.0
         assert args.command_timeout == 60.0
+        assert args.ask_pass is True
         assert args.no_host_key_check is True
 
     def test_missing_playbook_exits(self):
@@ -66,5 +69,11 @@ class TestConfigFromArgs:
         config = config_from_args(args)
         assert config.username is None
         assert config.private_key is None
+        assert config.password is None
         assert config.concurrency == 10
         assert config.host_key_check is True
+
+    def test_password_passed_through(self):
+        args = parse_args(["play.yml"])
+        config = config_from_args(args, password="secret")
+        assert config.password == "secret"

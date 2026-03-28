@@ -54,6 +54,13 @@ def build_parser() -> argparse.ArgumentParser:
         help="Per-command execution timeout in seconds (default: 300)",
     )
     parser.add_argument(
+        "-k",
+        "--ask-pass",
+        action="store_true",
+        default=False,
+        help="Prompt for SSH password",
+    )
+    parser.add_argument(
         "--no-host-key-check",
         action="store_true",
         default=False,
@@ -68,10 +75,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def config_from_args(args: argparse.Namespace) -> ExecutorConfig:
+def config_from_args(
+    args: argparse.Namespace, password: str | None = None
+) -> ExecutorConfig:
     return ExecutorConfig(
         username=args.user,
         private_key=args.private_key,
+        password=password,
         concurrency=args.concurrency,
         connect_timeout=args.timeout,
         command_timeout=args.command_timeout,
