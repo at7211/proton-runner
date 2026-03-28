@@ -1,0 +1,5 @@
+---
+- hosts: rebex
+  tasks:
+    - name: List home directory
+      bash: ls -la

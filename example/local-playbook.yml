@@ -1,0 +1,14 @@
+---
+- hosts: local
+  tasks:
+    - name: Current user
+      bash: whoami
+
+    - name: Server uptime
+      bash: uptime
+
+    - name: Disk usage
+      bash: df -h /
+
+    - name: Current directory listing
+      bash: ls -la /tmp | head -10
