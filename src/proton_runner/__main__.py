@@ -1,13 +1,38 @@
 from __future__ import annotations
 
 import asyncio
+import getpass
 import sys
 
 from proton_runner.cli import config_from_args, parse_args
 from proton_runner.executor import run_play
 from proton_runner.inventory import parse_inventory, resolve_hosts
+from proton_runner.models import Play
 from proton_runner.output import print_results
 from proton_runner.playbook import parse_playbook
+
+
+async def _run_all_plays(
+    plays: list[Play],
+    inventory: dict[str, list[str]],
+    config,
+) -> tuple[bool, bool]:
+    """Execute all plays, returning (has_failure, has_unreachable)."""
+    has_failure = False
+    has_unreachable = False
+
+    for play in plays:
+        hosts = resolve_hosts(inventory, play.hosts)
+        results = await run_play(hosts, play.tasks, config)
+        print_results(play.hosts, results, play.tasks)
+
+        for r in results:
+            if r.status == "failed":
+                has_failure = True
+            elif r.status == "unreachable":
+                has_unreachable = True
+
+    return has_failure, has_unreachable
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -25,26 +50,19 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Error loading playbook: {exc}", file=sys.stderr)
         return 1
 
-    config = config_from_args(args)
+    password = None
+    if args.ask_pass:
+        password = getpass.getpass("SSH password: ")
 
-    has_failure = False
-    has_unreachable = False
+    config = config_from_args(args, password=password)
 
-    for play in plays:
-        try:
-            hosts = resolve_hosts(inventory, play.hosts)
-        except KeyError as exc:
-            print(f"Error: {exc}", file=sys.stderr)
-            return 1
-
-        results = asyncio.run(run_play(hosts, play.tasks, config))
-        print_results(play.hosts, results)
-
-        for r in results:
-            if r.status == "failed":
-                has_failure = True
-            elif r.status == "unreachable":
-                has_unreachable = True
+    try:
+        has_failure, has_unreachable = asyncio.run(
+            _run_all_plays(plays, inventory, config)
+        )
+    except KeyError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
 
     if has_unreachable:
         return 2

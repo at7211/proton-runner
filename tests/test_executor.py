@@ -83,6 +83,33 @@ class TestRunPlay:
         assert results[0].task_results[1].return_code == 1
 
     @pytest.mark.asyncio
+    async def test_fail_fast_skips_remaining_tasks(self, config):
+        """When a task fails, subsequent tasks on that host are skipped."""
+        tasks = [
+            Task(name="Step 1", bash="echo ok"),
+            Task(name="Step 2 (fails)", bash="exit 1"),
+            Task(name="Step 3 (should be skipped)", bash="echo never"),
+        ]
+        conn = _make_mock_conn([
+            _make_ssh_result(stdout="ok"),
+            _make_ssh_result(stderr="boom", exit_status=1),
+            # Third result should never be consumed
+            _make_ssh_result(stdout="never"),
+        ])
+
+        with patch("proton_runner.executor.asyncssh") as mock_ssh:
+            mock_ssh.connect = MagicMock(return_value=conn)
+            mock_ssh.Error = Exception
+
+            results = await run_play(["host1.example.com"], tasks, config)
+
+        host_result = results[0]
+        assert host_result.status == "failed"
+        assert len(host_result.task_results) == 2
+        assert host_result.task_results[0].status == "ok"
+        assert host_result.task_results[1].status == "failed"
+
+    @pytest.mark.asyncio
     async def test_unreachable_host(self, config, tasks):
         with patch("proton_runner.executor.asyncssh") as mock_ssh:
             mock_ssh.connect = MagicMock(
@@ -196,7 +223,24 @@ class TestExecutorConfig:
         config = ExecutorConfig()
         assert config.username is None
         assert config.private_key is None
+        assert config.password is None
         assert config.concurrency == 10
         assert config.connect_timeout == 10.0
         assert config.command_timeout == 300.0
         assert config.host_key_check is True
+
+
+class TestBuildConnectKwargs:
+    def test_password_included(self):
+        from proton_runner.executor import _build_connect_kwargs
+
+        config = ExecutorConfig(password="secret", host_key_check=False)
+        kwargs = _build_connect_kwargs("host.com", config)
+        assert kwargs["password"] == "secret"
+
+    def test_no_password_by_default(self):
+        from proton_runner.executor import _build_connect_kwargs
+
+        config = ExecutorConfig(host_key_check=False)
+        kwargs = _build_connect_kwargs("host.com", config)
+        assert "password" not in kwargs

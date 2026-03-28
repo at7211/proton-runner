@@ -15,6 +15,7 @@ class ExecutorConfig:
 
     username: str | None = None
     private_key: str | None = None
+    password: str | None = None
     concurrency: int = 10
     connect_timeout: float = 10.0
     command_timeout: float = 300.0
@@ -66,6 +67,9 @@ def _build_connect_kwargs(host: str, config: ExecutorConfig) -> dict:
     if config.private_key:
         kwargs["client_keys"] = [config.private_key]
 
+    if config.password:
+        kwargs["password"] = config.password
+
     if not config.host_key_check:
         kwargs["known_hosts"] = None
 
@@ -78,7 +82,11 @@ async def _execute_tasks(
     tasks: list[Task],
     config: ExecutorConfig,
 ) -> HostResult:
-    """Run tasks sequentially on an established connection."""
+    """Run tasks sequentially on an established connection.
+
+    Stops on the first failed task (fail-fast), matching Ansible's default
+    behaviour: subsequent tasks are skipped for this host.
+    """
     task_results: list[TaskResult] = []
 
     for task in tasks:
@@ -87,13 +95,14 @@ async def _execute_tasks(
                 conn.run(task.bash, check=False),
                 timeout=config.command_timeout,
             )
+            exit_status = result.exit_status
             task_results.append(
                 TaskResult(
                     task_name=task.name,
                     host=host,
                     stdout=result.stdout or "",
                     stderr=result.stderr or "",
-                    return_code=result.exit_status or 0,
+                    return_code=exit_status if exit_status is not None else -1,
                 )
             )
         except asyncio.TimeoutError:
@@ -106,5 +115,8 @@ async def _execute_tasks(
                     return_code=-1,
                 )
             )
+
+        if task_results[-1].return_code != 0:
+            break
 
     return HostResult(host=host, task_results=task_results)

@@ -86,6 +86,7 @@ def print_play_recap(results: list[HostResult], stream: TextIO = sys.stdout) -> 
 def print_results(
     hosts_group: str,
     results: list[HostResult],
+    tasks: list | None = None,
     stream: TextIO = sys.stdout,
 ) -> None:
     """Print full output for a play execution."""
@@ -94,10 +95,14 @@ def print_results(
     reachable = [r for r in results if not r.unreachable]
     unreachable = [r for r in results if r.unreachable]
 
-    # Collect task names from the first reachable host (all ran the same tasks)
-    task_names: list[str] = []
-    if reachable:
+    # Use the authoritative task list when available; fall back to first
+    # reachable host's results for backward compatibility.
+    if tasks is not None:
+        task_names = [t.name for t in tasks]
+    elif reachable:
         task_names = [tr.task_name for tr in reachable[0].task_results]
+    else:
+        task_names = []
 
     for task_idx, task_name in enumerate(task_names):
         print_task_header(task_name, stream)

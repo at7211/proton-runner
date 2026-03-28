@@ -47,6 +47,6 @@ class HostResult:
     def status(self) -> str:
         if self.unreachable:
             return "unreachable"
-        if any(tr.return_code != 0 for tr in self.task_results):
+        if any(tr.status == "failed" for tr in self.task_results):
             return "failed"
         return "ok"
