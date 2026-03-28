@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools>=68.0", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "proton-runner"
@@ -12,7 +12,7 @@ dependencies = [
     "asyncssh>=2.14",
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
     "pytest>=7.4",
     "pytest-asyncio>=0.23",
@@ -21,8 +21,8 @@ dev = [
 [project.scripts]
 proton-runner = "proton_runner.__main__:main"
 
-[tool.setuptools.packages.find]
-where = ["src"]
+[tool.hatch.build.targets.wheel]
+packages = ["src/proton_runner"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
