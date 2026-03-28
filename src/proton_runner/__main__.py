@@ -5,7 +5,7 @@ import getpass
 import sys
 
 from proton_runner.cli import config_from_args, parse_args
-from proton_runner.executor import run_play
+from proton_runner.executor import ExecutorConfig, run_play
 from proton_runner.inventory import parse_inventory, resolve_hosts
 from proton_runner.models import Play
 from proton_runner.output import print_results
@@ -15,7 +15,7 @@ from proton_runner.playbook import parse_playbook
 async def _run_all_plays(
     plays: list[Play],
     inventory: dict[str, list[str]],
-    config,
+    config: ExecutorConfig,
 ) -> tuple[bool, bool]:
     """Execute all plays, returning (has_failure, has_unreachable)."""
     has_failure = False

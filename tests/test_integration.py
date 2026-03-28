@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from proton_runner.__main__ import main
-from proton_runner.models import HostResult, TaskResult
+from proton_runner.models import HostResult, Task, TaskResult
 from proton_runner.output import print_results
 
 
@@ -129,7 +129,8 @@ class TestOutputFormatting:
                 ],
             ),
         ]
-        print_results("web", results, stream=buf)
+        tasks = [Task(name="Uptime", bash="uptime")]
+        print_results("web", results, tasks=tasks, stream=buf)
         output = buf.getvalue()
         assert "PLAY [web]" in output
         assert "TASK [Uptime]" in output
@@ -154,7 +155,8 @@ class TestOutputFormatting:
                 ],
             ),
         ]
-        print_results("db", results, stream=buf)
+        tasks = [Task(name="Bad", bash="exit 2")]
+        print_results("db", results, tasks=tasks, stream=buf)
         output = buf.getvalue()
         assert "failed" in output
         assert "no such file" in output
@@ -165,7 +167,7 @@ class TestOutputFormatting:
         results = [
             HostResult(host="bad.com", unreachable=True, error="Connection refused"),
         ]
-        print_results("db", results, stream=buf)
+        print_results("db", results, tasks=[], stream=buf)
         output = buf.getvalue()
         assert "unreachable" in output
         assert "Connection refused" in output

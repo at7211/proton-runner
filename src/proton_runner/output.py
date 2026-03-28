@@ -3,7 +3,7 @@ from __future__ import annotations
 import sys
 from typing import TextIO
 
-from proton_runner.models import HostResult, TaskResult
+from proton_runner.models import HostResult, Task, TaskResult
 
 _GREEN = "\033[32m"
 _RED = "\033[31m"
@@ -86,7 +86,7 @@ def print_play_recap(results: list[HostResult], stream: TextIO = sys.stdout) -> 
 def print_results(
     hosts_group: str,
     results: list[HostResult],
-    tasks: list | None = None,
+    tasks: list[Task] | None = None,
     stream: TextIO = sys.stdout,
 ) -> None:
     """Print full output for a play execution."""
@@ -95,12 +95,8 @@ def print_results(
     reachable = [r for r in results if not r.unreachable]
     unreachable = [r for r in results if r.unreachable]
 
-    # Use the authoritative task list when available; fall back to first
-    # reachable host's results for backward compatibility.
     if tasks is not None:
         task_names = [t.name for t in tasks]
-    elif reachable:
-        task_names = [tr.task_name for tr in reachable[0].task_results]
     else:
         task_names = []
 

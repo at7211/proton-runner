@@ -7,7 +7,7 @@ Inspired by [Ansible](https://github.com/ansible/ansible) — proton-runner reim
 ## Requirements
 
 - Python 3.11+
-- SSH agent or key-based authentication configured on target hosts
+- SSH agent, key-based, or password authentication configured on target hosts
 
 ## Installation
 

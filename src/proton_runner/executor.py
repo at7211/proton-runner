@@ -84,8 +84,8 @@ async def _execute_tasks(
 ) -> HostResult:
     """Run tasks sequentially on an established connection.
 
-    Stops on the first failed task (fail-fast), matching Ansible's default
-    behaviour: subsequent tasks are skipped for this host.
+    Stops on the first failed task (fail-fast): subsequent tasks are skipped
+    for this host.
     """
     task_results: list[TaskResult] = []
 
